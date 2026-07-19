@@ -1,0 +1,8 @@
+"use client";
+
+import { PublicModulePage } from "../../components/site/PublicCms";
+import { SiteShell } from "../../components/site/SiteShell";
+
+export default function PartnersPage() {
+  return <SiteShell><PublicModulePage module="partners" /></SiteShell>;
+}

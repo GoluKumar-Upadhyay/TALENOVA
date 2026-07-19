@@ -1,0 +1,8 @@
+"use client";
+import { FormEvent, useState } from "react";
+import { api } from "../../../lib/api";
+export default function AdminLogin() {
+  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState("");
+  async function submit(event: FormEvent) { event.preventDefault(); setError(""); try { const data = await api<{access_token:string}>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }); localStorage.setItem("talenova_access_token", data.access_token); window.location.href = "/admin"; } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to sign in"); } }
+  return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6"><form onSubmit={submit} className="w-full max-w-md rounded-3xl border bg-white p-8 shadow-soft"><p className="eyebrow">TALENOVA CMS</p><h1 className="mt-2 text-3xl font-black">Admin sign in</h1><p className="mt-2 text-sm text-slate-500">Manage your public platform content securely.</p><label className="mt-8 block text-sm font-bold">Email<input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="mt-2 w-full rounded-xl border p-3" /></label><label className="mt-4 block text-sm font-bold">Password<input required type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 w-full rounded-xl border p-3" /></label>{error&&<p className="mt-4 text-sm text-red-600">{error}</p>}<button className="mt-6 w-full rounded-xl bg-brand p-3 font-bold text-white">Sign in</button></form></main>;
+}
