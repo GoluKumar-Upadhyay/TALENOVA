@@ -1,5 +1,7 @@
 """Navigation API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class NavigationWrite(BaseModel):
     parent_id: int | None = None
     label: str = Field(min_length=1, max_length=120)
@@ -13,7 +15,14 @@ class NavigationWrite(BaseModel):
     visible_roles: list[str] = Field(default_factory=list)
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class NavigationRead(NavigationWrite): uuid: str
+
+
+class NavigationRead(NavigationWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class NavigationPage(BaseModel):
     items: list[NavigationRead]
     total: int

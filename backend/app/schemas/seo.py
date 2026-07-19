@@ -1,5 +1,7 @@
 """SEO API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class SEOWrite(BaseModel):
     page_key: str = Field(min_length=1, max_length=120)
     site_title: str | None = Field(default=None, max_length=255)
@@ -18,7 +20,14 @@ class SEOWrite(BaseModel):
     redirect_rules: list[dict] = Field(default_factory=list)
     favicon_url: str | None = None
     is_active: bool = True
-class SEORead(SEOWrite): uuid: str
+
+
+class SEORead(SEOWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class SEOPage(BaseModel):
     items: list[SEORead]
     total: int

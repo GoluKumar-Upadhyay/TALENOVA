@@ -15,7 +15,6 @@ class WorkshopEvent(Base):
     start_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
     end_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
     registration_deadline: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    event_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_maps_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     mode: Mapped[str] = mapped_column(String(20), default="online")

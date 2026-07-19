@@ -1,5 +1,7 @@
 """Success story API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class SuccessStoryWrite(BaseModel):
     name: str = Field(min_length=2, max_length=180)
     image_url: str | None = Field(default=None, max_length=1000)
@@ -20,7 +22,14 @@ class SuccessStoryWrite(BaseModel):
     story: str = Field(min_length=10, max_length=30000)
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class SuccessStoryRead(SuccessStoryWrite): uuid: str
+
+
+class SuccessStoryRead(SuccessStoryWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class SuccessStoryPage(BaseModel):
     items: list[SuccessStoryRead]
     total: int

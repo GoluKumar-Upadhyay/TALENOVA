@@ -1,6 +1,6 @@
 """Teacher API validation and representation contracts."""
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class TeacherWrite(BaseModel):
@@ -22,6 +22,8 @@ class TeacherWrite(BaseModel):
 
 class TeacherRead(TeacherWrite):
     """Public teacher payload returned by API collection endpoints."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     uuid: str
 

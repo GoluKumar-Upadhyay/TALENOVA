@@ -1,5 +1,7 @@
 """Contact inquiry contracts."""
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
 class ContactWrite(BaseModel):
     contact_type: str = Field(pattern="^(student|college|industry)$")
     name: str = Field(min_length=2, max_length=180)
@@ -14,11 +16,17 @@ class ContactWrite(BaseModel):
     preferred_dates: str | None = Field(default=None, max_length=255)
     subject: str = Field(min_length=2, max_length=255)
     message: str = Field(min_length=10, max_length=20000)
+
+
 class ContactRead(ContactWrite):
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
     status: str
     is_read: bool
     is_archived: bool
+
+
 class ContactPage(BaseModel):
     items: list[ContactRead]
     total: int

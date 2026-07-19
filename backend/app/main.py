@@ -45,23 +45,48 @@ from app.middleware.security import RequestContextMiddleware, SecurityHeadersMid
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Initialize required application resources for the process lifetime."""
-    with SessionLocal() as db:
-        if not db.scalar(select(User).where(User.email == str(get_settings().admin_email))):
-            role = Role(name="admin", description="Full platform administrator")
-            role.permissions = [
-                Permission(code=code, name=code.replace(":", " ").title())
-                for code in ("cms:read", "cms:write", "users:manage")
-            ]
-            db.add(
-                User(
-                    email=str(get_settings().admin_email).lower(),
-                    password_hash=passwords.hash(get_settings().admin_password),
-                    is_email_verified=True,
-                    email_verified_at=datetime.utcnow(),
-                    roles=[role],
+    import logging
+    _log = logging.getLogger("talenova.startup")
+
+    # ── PostgreSQL connectivity check ────────────────────────────────────────
+    try:
+        with SessionLocal() as db:
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
+            _log.info("PostgreSQL connect OK  ✓  (%s)", get_settings().database_url.split("@")[-1])
+
+            # ── Admin seed ──────────────────────────────────────────────────
+            if not db.scalar(select(User).where(User.email == str(get_settings().admin_email))):
+                role = Role(name="admin", description="Full platform administrator")
+                role.permissions = [
+                    Permission(code=code, name=code.replace(":", " ").title())
+                    for code in ("cms:read", "cms:write", "users:manage")
+                ]
+                db.add(
+                    User(
+                        email=str(get_settings().admin_email).lower(),
+                        password_hash=passwords.hash(get_settings().admin_password),
+                        is_email_verified=True,
+                        email_verified_at=datetime.utcnow(),
+                        roles=[role],
+                    )
                 )
-            )
-            db.commit()
+                db.commit()
+                _log.info("Admin user seeded  ✓")
+    except Exception as exc:
+        _log.error("PostgreSQL connect FAIL  ✗  %s", exc)
+
+    # ── Supabase connectivity check ──────────────────────────────────────────
+    try:
+        from supabase import create_client
+        settings = get_settings()
+        _client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+        # List root of bucket — lightweight probe that confirms credentials work
+        _client.storage.from_(settings.supabase_bucket).list("", {"limit": 1})
+        _log.info("Supabase connect OK  ✓  bucket=%s", settings.supabase_bucket)
+    except Exception as exc:
+        _log.warning("Supabase connect FAIL  ✗  %s", exc)
+
     yield
 
 

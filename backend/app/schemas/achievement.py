@@ -1,5 +1,7 @@
 """Achievement API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class AchievementWrite(BaseModel):
     title: str = Field(min_length=2, max_length=255)
     description: str | None = Field(default=None, max_length=10000)
@@ -8,7 +10,14 @@ class AchievementWrite(BaseModel):
     is_featured: bool = False
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class AchievementRead(AchievementWrite): uuid: str
+
+
+class AchievementRead(AchievementWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class AchievementPage(BaseModel):
     items: list[AchievementRead]
     total: int

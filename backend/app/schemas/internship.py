@@ -1,5 +1,7 @@
 """Internship API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class InternshipWrite(BaseModel):
     title: str = Field(min_length=2, max_length=255)
     description: str | None = Field(default=None, max_length=20000)
@@ -17,7 +19,14 @@ class InternshipWrite(BaseModel):
     is_featured: bool = False
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class InternshipRead(InternshipWrite): uuid: str
+
+
+class InternshipRead(InternshipWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class InternshipPage(BaseModel):
     items: list[InternshipRead]
     total: int

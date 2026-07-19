@@ -1,5 +1,7 @@
 """Testimonial API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class TestimonialWrite(BaseModel):
     student_name: str = Field(min_length=2, max_length=180)
     college: str | None = Field(default=None, max_length=255)
@@ -13,7 +15,14 @@ class TestimonialWrite(BaseModel):
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
     is_featured: bool = False
-class TestimonialRead(TestimonialWrite): uuid: str
+
+
+class TestimonialRead(TestimonialWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class TestimonialPage(BaseModel):
     items: list[TestimonialRead]
     total: int

@@ -26,12 +26,14 @@ class GalleryService:
     def create(self, values: dict):
         """Create a gallery record for an uploaded Supabase URL."""
         self._validate_storage_url(values["image_url"])
+        self._validate_category(values["category_id"])
         return self.repository.create(values)
 
     def update(self, uuid: str, values: dict):
         """Update a gallery record after validating its image URL."""
         item = self._find(uuid)
         self._validate_storage_url(values["image_url"])
+        self._validate_category(values["category_id"])
         return self.repository.save(item, values)
 
     def delete(self, uuid: str) -> None:
@@ -66,3 +68,8 @@ class GalleryService:
         """Reject non-HTTPS image locations before persistence."""
         if not url.startswith("https://"):
             raise HTTPException(status_code=422, detail="Image URL must use HTTPS")
+
+    def _validate_category(self, category_id: int) -> None:
+        """Raise 422 if the gallery category does not exist."""
+        if not self.repository.category_exists(category_id):
+            raise HTTPException(status_code=422, detail=f"Gallery category {category_id} does not exist")

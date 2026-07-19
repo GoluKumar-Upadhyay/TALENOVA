@@ -24,5 +24,10 @@ class VideoService:
     @staticmethod
     def _validate(values: dict) -> None:
         youtube = values.get("youtube_url")
-        if youtube and not ("youtube.com" in youtube or "youtu.be" in youtube):
-            raise HTTPException(status_code=422, detail="YouTube URL is invalid")
+        if youtube:
+            # Accept YouTube, Vimeo, Google Drive, and any other HTTPS URL
+            if not youtube.startswith("https://"):
+                raise HTTPException(status_code=422, detail="URL must use HTTPS")
+        video_url = values.get("video_url")
+        if video_url and not video_url.startswith("https://"):
+            raise HTTPException(status_code=422, detail="Uploaded video URL must use HTTPS")

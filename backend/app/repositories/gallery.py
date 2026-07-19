@@ -60,6 +60,15 @@ class GalleryRepository:
         return list(self.db.scalars(query.offset((page - 1) * page_size).limit(page_size))), self.db.scalar(select(func.count()).select_from(GalleryCategory).where(*filters)) or 0
     def get_category(self, uuid: str) -> GalleryCategory | None:
         return self.db.scalar(select(GalleryCategory).where(GalleryCategory.uuid == uuid, GalleryCategory.is_deleted.is_(False)))
+
+    def category_exists(self, category_id: int) -> bool:
+        """Return True if a non-deleted gallery category with this PK exists."""
+        return self.db.scalar(
+            select(func.count()).select_from(GalleryCategory).where(
+                GalleryCategory.id == category_id,
+                GalleryCategory.is_deleted.is_(False),
+            )
+        ) > 0
     def create_category(self, values: dict) -> GalleryCategory:
         item = GalleryCategory(**values); self.db.add(item); self.db.commit(); self.db.refresh(item); return item
     def save_category(self, item: GalleryCategory, values: dict) -> GalleryCategory:

@@ -10,9 +10,21 @@ class AnalyticsService:
     SORT_FIELDS = set(AnalyticsRepository.SORT_FIELDS)
     def __init__(self, db: Session) -> None: self.repository = AnalyticsRepository(db)
     def dashboard(self, start=None, end=None) -> dict:
-        counts = dict(self.repository.event_counts(start, end))
-        summary = {key: counts.get(key, 0) for key in ("courses", "students", "teachers", "contacts", "events", "internships", "testimonials", "success_stories", "gallery_images", "videos")}
-        return {"summary": {f"total_{key}": value for key, value in summary.items()}, "monthly_contacts": [], "monthly_events": [], "monthly_internships": [], "recent_activities": [{"event_type": item.event_type, "occurred_at": item.occurred_at.isoformat()} for item in self.repository.recent()]}
+        counts = self.repository.live_counts()
+        summary = {key: counts.get(key, 0) for key in (
+            "courses", "students", "teachers", "contacts", "events",
+            "internships", "testimonials", "success_stories", "gallery_images", "videos",
+        )}
+        return {
+            "summary": {f"total_{key}": value for key, value in summary.items()},
+            "monthly_contacts": [],
+            "monthly_events": [],
+            "monthly_internships": [],
+            "recent_activities": [
+                {"event_type": item.event_type, "occurred_at": item.occurred_at.isoformat()}
+                for item in self.repository.recent()
+            ],
+        }
     def list(self, search: str | None, event_type: str | None, start=None, end=None, sort: str = "occurred_at", direction: str = "desc", page: int = 1, page_size: int = 24):
         if sort not in self.SORT_FIELDS: raise HTTPException(422, "Unsupported analytics sort field")
         if direction not in {"asc", "desc"}: raise HTTPException(422, "Unsupported sort direction")

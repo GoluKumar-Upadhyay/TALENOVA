@@ -1,5 +1,7 @@
 """FAQ API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class FAQWrite(BaseModel):
     question: str = Field(min_length=5, max_length=500)
     answer: str = Field(min_length=1, max_length=30000)
@@ -9,8 +11,18 @@ class FAQWrite(BaseModel):
     is_featured: bool = False
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class FAQRead(FAQWrite): uuid: str
-class FAQEngagement(BaseModel): helpful: bool
+
+
+class FAQRead(FAQWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
+class FAQEngagement(BaseModel):
+    helpful: bool
+
+
 class FAQPage(BaseModel):
     items: list[FAQRead]
     total: int

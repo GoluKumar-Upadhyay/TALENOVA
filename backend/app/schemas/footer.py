@@ -1,5 +1,7 @@
 """Footer API contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class FooterWrite(BaseModel):
     logo_url: str | None = None
     description: str | None = Field(default=None, max_length=10000)
@@ -13,7 +15,14 @@ class FooterWrite(BaseModel):
     legal_links: list[dict] = Field(default_factory=list)
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class FooterRead(FooterWrite): uuid: str
+
+
+class FooterRead(FooterWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class FooterPage(BaseModel):
     items: list[FooterRead]
     total: int

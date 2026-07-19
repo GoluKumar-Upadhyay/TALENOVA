@@ -1,5 +1,7 @@
 """Workshop event contracts."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class EventWrite(BaseModel):
     title: str = Field(min_length=2, max_length=255)
     description: str | None = Field(default=None, max_length=20000)
@@ -7,7 +9,6 @@ class EventWrite(BaseModel):
     start_date: str | None = Field(default=None, max_length=40)
     end_date: str | None = Field(default=None, max_length=40)
     registration_deadline: str | None = Field(default=None, max_length=40)
-    event_date: str | None = Field(default=None, max_length=40)
     location: str | None = Field(default=None, max_length=255)
     google_maps_url: str | None = Field(default=None, max_length=1000)
     mode: str = Field(default="online", pattern="^(online|offline|hybrid)$")
@@ -19,7 +20,14 @@ class EventWrite(BaseModel):
     is_featured: bool = False
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
-class EventRead(EventWrite): uuid: str
+
+
+class EventRead(EventWrite):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+
+
 class EventPage(BaseModel):
     items: list[EventRead]
     total: int

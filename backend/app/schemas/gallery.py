@@ -1,6 +1,6 @@
 """Gallery API contracts."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GalleryCategoryWrite(BaseModel):
@@ -23,15 +23,25 @@ class GalleryImageWrite(BaseModel):
 
 class GalleryImageRead(GalleryImageWrite):
     """Public gallery image representation."""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
+
+
 class GalleryCategoryRead(GalleryCategoryWrite):
     """Gallery category response."""
+    model_config = ConfigDict(from_attributes=True)
+
     uuid: str
+
+
 class GalleryImagePage(BaseModel):
     items: list[GalleryImageRead]
     total: int
     page: int
     page_size: int
+
+
 class GalleryCategoryPage(BaseModel):
     items: list[GalleryCategoryRead]
     total: int

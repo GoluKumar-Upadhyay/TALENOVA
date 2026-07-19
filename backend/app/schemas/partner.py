@@ -1,6 +1,6 @@
 """Partner API contracts."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PartnerWrite(BaseModel):
@@ -17,6 +17,8 @@ class PartnerWrite(BaseModel):
 
 class PartnerRead(PartnerWrite):
     """Partner response representation."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     uuid: str
 
