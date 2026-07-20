@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, Layers3, Quote, Trophy } from "lucide-react";
+import { ArrowRight, Quote } from "lucide-react";
 import { FeaturedSection } from "../../components/site/PublicCms";
 import { SiteShell } from "../../components/site/SiteShell";
 
@@ -23,11 +23,6 @@ export default function SuccessPage() {
               <Quote className="mx-auto text-blue-300" size={34} />
               <blockquote className="mt-6 text-2xl font-black leading-10 text-white md:text-3xl">The strongest outcome is not a certificate. It is being able to explain what you made, why you made it, and what you would improve next.</blockquote>
               <p className="mt-6 text-sm font-bold text-blue-200">The TALENOVA learning philosophy</p>
-            </div>
-            <div className="mt-16 grid gap-5 md:grid-cols-3">
-              <div className="dark-metric"><BriefcaseBusiness /><strong>Learn</strong><span>with a reason</span></div>
-              <div className="dark-metric"><Layers3 /><strong>Build</strong><span>with a point of view</span></div>
-              <div className="dark-metric"><Trophy /><strong>Move</strong><span>with more confidence</span></div>
             </div>
           </div>
         </section>

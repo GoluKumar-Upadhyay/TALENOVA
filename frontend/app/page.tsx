@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Check, CirclePlay, Layers3, Rocket, ShieldCheck, Sparkles, Target, UsersRound } from "lucide-react";
+import { ArrowRight, CirclePlay, Layers3, Rocket, Sparkles, Target } from "lucide-react";
 import { SectionHeading, SiteShell } from "../components/site/SiteShell";
-import { FeaturedSection, PublicCard, TrustStrip, publicModuleConfigs, usePublicList } from "../components/site/PublicCms";
+import { EmptyState, FeaturedSection, LoadingGrid, PublicCard, publicModuleConfigs, usePublicList } from "../components/site/PublicCms";
 import { activeRecords, normalizePublicPage, publicApi, queryPath, type PublicRecord } from "../lib/public-api";
 
-function heroText(value: unknown, fallback: string) {
-  return typeof value === "string" && value.trim() ? value : fallback;
+function heroText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : "";
 }
 
 function HomeHero() {
@@ -18,30 +18,35 @@ function HomeHero() {
     select: (data) => activeRecords(normalizePublicPage(data).items)[0],
   });
   const record = hero.data;
-  const heading = heroText(record?.heading, "Become the person industry is ready for.");
-  const subheading = heroText(record?.subheading, "Career transformation, by design");
-  const description = heroText(record?.description, "TALENOVA helps ambitious students move from consuming courses to creating credible work through learning, projects, mentorship, internships, and placement support.");
-  const buttonText = heroText(record?.button_text, "Explore courses");
-  const buttonLink = heroText(record?.button_link, "/courses");
-  const image = heroText(record?.hero_image_url, "");
+  const heading = heroText(record?.heading);
+  const subheading = heroText(record?.subheading);
+  const description = heroText(record?.description);
+  const buttonText = heroText(record?.button_text);
+  const buttonLink = heroText(record?.button_link);
+  const image = heroText(record?.hero_image_url);
+
+  if (hero.isLoading) {
+    return <section className="hero-section"><div className="wrap py-20"><LoadingGrid /></div></section>;
+  }
+
+  if (hero.isError || !record || !heading) {
+    return <section className="hero-section"><div className="wrap py-20"><EmptyState label="Hero content is not published right now." /></div></section>;
+  }
 
   return (
     <section className="hero-section">
       <div className="wrap grid gap-14 py-16 md:grid-cols-[1.05fr_.95fr] md:items-center md:py-24">
         <div className="reveal">
-          <p className="eyebrow">{subheading}</p>
+          {subheading ? <p className="eyebrow">{subheading}</p> : null}
           <h1 className="hero-title mt-5">{heading}</h1>
-          <div className="hero-copy mt-6" dangerouslySetInnerHTML={{ __html: description }} />
+          {description ? <div className="hero-copy mt-6" dangerouslySetInnerHTML={{ __html: description }} /> : null}
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href={buttonLink} className="button button-primary">{buttonText} <ArrowRight size={17} /></Link>
+            {buttonText && buttonLink ? <Link href={buttonLink} className="button button-primary">{buttonText} <ArrowRight size={17} /></Link> : null}
             <Link href="/about" className="button button-outline"><CirclePlay size={17} /> See how it works</Link>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-slate-600">
-            {["Real projects", "Expert mentorship", "Placement support"].map((item) => <span key={item} className="inline-flex items-center gap-2"><Check size={16} className="text-brand" /> {item}</span>)}
           </div>
         </div>
         <div className="journey-art reveal">
-          {image ? <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" /> : null}
+          {image ? <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" loading="eager" decoding="async" /> : null}
           <div className="journey-orbit orbit-one" />
           <div className="journey-orbit orbit-two" />
           <div className="journey-core"><Sparkles size={34} /><span>your next<br /><b>breakthrough</b></span></div>
@@ -50,23 +55,6 @@ function HomeHero() {
           <div className="journey-node node-three"><Target size={18} /><span>Launch</span></div>
           <div className="journey-caption">A clearer path from curiosity<br />to career confidence.</div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function LearningLoop() {
-  const steps = [
-    ["01", "Learn", "Build the foundations and mental models that make advanced work approachable.", UsersRound],
-    ["02", "Build", "Turn concepts into projects with decisions, trade-offs, and a visible point of view.", Layers3],
-    ["03", "Intern", "Work through a professional workflow with feedback, reviews, and real constraints.", Rocket],
-    ["04", "Get placed", "Leave with proof you can explain: a portfolio, confidence, and a clearer next move.", ShieldCheck],
-  ] as const;
-  return (
-    <section className="wrap py-20">
-      <SectionHeading eyebrow="Why TALENOVA" title="Every step leaves evidence." description="The goal is not to finish another course. It is to become more capable, more visible, and more ready." />
-      <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {steps.map(([number, title, text, Icon]) => <article key={title} className="process-card reveal"><span className="process-number">{number}</span><div className="process-icon"><Icon size={20} /></div><h3 className="mt-6 text-lg font-black">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}
       </div>
     </section>
   );
@@ -92,9 +80,8 @@ export default function Home() {
     <SiteShell>
       <main>
         <HomeHero />
-        <TrustStrip />
+        <FeaturedSection module="content" limit={3} title="Current TALENOVA updates from the CMS." description="Published content is loaded directly from the FastAPI Content module." />
         <FeaturedSection module="courses" limit={4} title="Choose a direction. Then make it yours." description="Focused courses for skills that are changing how teams build, decide, and grow." />
-        <LearningLoop />
         <FeaturedSection module="projects" limit={3} title="Build work you are proud to walk through." description="Projects are where learning becomes a professional story with decisions, tools, and proof." />
         <FeaturedSection module="achievements" limit={3} />
         <FeaturedSection module="testimonials" limit={3} />

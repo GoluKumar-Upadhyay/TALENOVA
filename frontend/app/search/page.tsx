@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import { EmptyState, PublicCard, publicModuleConfigs, usePublicList } from "../../components/site/PublicCms";
 import { SiteShell } from "../../components/site/SiteShell";
 
-const searchableModules = ["courses", "teachers", "founders", "partners", "gallery", "videos", "achievements", "projects", "testimonials", "success-stories", "events", "internships", "faqs"] as const;
+const searchableModules = ["content", "courses", "teachers", "founders", "partners", "gallery", "videos", "achievements", "projects", "testimonials", "success-stories", "events", "internships", "faqs"] as const;
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");

@@ -28,14 +28,21 @@ export async function publicApi<T>(path: string, init: RequestInit = {}): Promis
   return response.json();
 }
 
-export function normalizePublicPage<T extends PublicRecord>(data: T[] | PublicPageResponse<T> | T | undefined) {
-  if (!data) return { items: [] as T[], total: 0, page: 1, page_size: 0 };
+export function normalizePublicPage(data: PublicRecord[] | PublicPageResponse<PublicRecord> | PublicRecord | undefined): PublicPageResponse<PublicRecord> {
+  if (!data) return { items: [], total: 0, page: 1, page_size: 0 };
   if (Array.isArray(data)) return { items: data, total: data.length, page: 1, page_size: data.length };
-  if ("items" in data && Array.isArray(data.items)) return data;
+  if ("items" in data && Array.isArray(data.items)) {
+    return {
+      items: data.items as PublicRecord[],
+      total: typeof data.total === "number" ? data.total : data.items.length,
+      page: typeof data.page === "number" ? data.page : 1,
+      page_size: typeof data.page_size === "number" ? data.page_size : data.items.length,
+    };
+  }
   return { items: [data], total: 1, page: 1, page_size: 1 };
 }
 
-export function activeRecords<T extends PublicRecord>(items: T[]) {
+export function activeRecords(items: PublicRecord[]): PublicRecord[] {
   return items.filter((item) => item.is_active !== false && item.is_published !== false);
 }
 

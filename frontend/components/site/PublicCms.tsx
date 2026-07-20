@@ -6,15 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Award,
+  BadgeCheck,
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
   Camera,
   CheckCircle2,
+  Clock3,
+  FileText,
   GraduationCap,
-  ImageIcon,
   Link2,
-  MapPin,
   PlayCircle,
   Quote,
   Search,
@@ -26,6 +27,7 @@ import { activeRecords, normalizePublicPage, publicApi, queryPath, type PublicPa
 import { SectionHeading } from "./SiteShell";
 
 type PublicModuleKey =
+  | "content"
   | "courses"
   | "teachers"
   | "founders"
@@ -61,6 +63,20 @@ type ModuleConfig = {
 };
 
 export const publicModuleConfigs: Record<PublicModuleKey, ModuleConfig> = {
+  content: {
+    key: "content",
+    endpoint: "/content/content",
+    eyebrow: "Content",
+    title: "Published TALENOVA updates and page content.",
+    description: "Read current CMS-managed public content from the TALENOVA backend.",
+    icon: FileText,
+    titleField: "title",
+    descriptionField: "content",
+    imageField: "media_urls",
+    secondaryFields: ["slug"],
+    emptyLabel: "No public content is published right now.",
+    defaultSort: "display_order",
+  },
   courses: {
     key: "courses",
     endpoint: "/courses",
@@ -281,7 +297,7 @@ export const publicModuleConfigs: Record<PublicModuleKey, ModuleConfig> = {
   },
 };
 
-export function plainText(value: unknown) {
+export function plainText(value: unknown): string {
   if (value == null) return "";
   if (Array.isArray(value)) return value.map(plainText).filter(Boolean).join(", ");
   if (typeof value === "object") {
@@ -294,8 +310,46 @@ export function htmlValue(value: unknown) {
   return plainText(value) ? String(value) : "";
 }
 
+function normalizedKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function ratingSummary(value: number | null | undefined) {
+  if (!value || Number.isNaN(value)) return "";
+  return value.toFixed(1);
+}
+
+function starsForRating(value: number | null | undefined) {
+  if (!value || Number.isNaN(value)) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/90">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star key={index} size={11} className={index < Math.round(value) ? "fill-amber-300 text-amber-300" : "text-white/30"} />
+      ))}
+    </span>
+  );
+}
+
+export function courseRatingForRecord(course: PublicRecord, testimonials: PublicRecord[] = []) {
+  const courseName = normalizedKey(plainText(course.title) || plainText(course.name) || plainText(course.slug));
+  if (!courseName || !testimonials.length) return null;
+  const ratings = testimonials.flatMap((testimonial) => {
+    const score = Number(plainText(testimonial.rating));
+    if (!score || Number.isNaN(score)) return [];
+    const sources = [testimonial.course_completed, testimonial.course].map(plainText).map(normalizedKey).filter(Boolean);
+    if (!sources.some((source) => source === courseName || source.includes(courseName) || courseName.includes(source))) return [];
+    return [score];
+  });
+  if (!ratings.length) return null;
+  return ratings.reduce((sum, score) => sum + score, 0) / ratings.length;
+}
+
 export function imageUrl(item: PublicRecord, field?: string) {
   const value = field ? item[field] : undefined;
+  if (Array.isArray(value)) {
+    const first = value.find((entry) => typeof entry === "string" && entry.startsWith("http"));
+    return typeof first === "string" ? first : "";
+  }
   return typeof value === "string" && value.startsWith("http") ? value : "";
 }
 
@@ -337,13 +391,67 @@ export function EmptyState({ label }: { label: string }) {
 
 export function LoadingGrid() {
   return (
-    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-label="Loading content">
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading content">
       {Array.from({ length: 6 }).map((_, index) => <div key={index} className="skeleton-card" />)}
     </div>
   );
 }
 
-export function PublicCard({ item, config, compact = false }: { item: PublicRecord; config: ModuleConfig; compact?: boolean }) {
+const profileModules: PublicModuleKey[] = ["teachers", "founders"];
+
+export function PublicProfileCard({ item, config }: { item: PublicRecord; config: ModuleConfig }) {
+  const title = itemTitle(item, config);
+  const description = config.descriptionField ? plainText(item[config.descriptionField]) : "";
+  const image = imageUrl(item, config.imageField);
+  const Icon = config.icon;
+  const chips = (config.chipFields || [])
+    .flatMap((field) => {
+      const value = item[field];
+      if (Array.isArray(value)) return value.map(plainText);
+      return plainText(value).split(",").map((part: string) => part.trim());
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+  const secondary = (config.secondaryFields || []).map((field) => plainText(item[field])).filter(Boolean);
+  const href = config.linkField ? plainText(item[config.linkField]) : "";
+
+  return (
+    <article className="reveal flex h-full flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+      <div className="flex items-center gap-4">
+        {image ? (
+          <img src={image} alt={title} className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-slate-200" loading="lazy" decoding="async" />
+        ) : (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand ring-1 ring-slate-200" aria-hidden="true">
+            <Icon size={22} />
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-black text-ink">{title}</h3>
+          {secondary.length ? <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{secondary.join(" · ")}</p> : null}
+        </div>
+      </div>
+      {chips.length ? (
+        <div className="flex flex-wrap gap-2">
+          {chips.map((chip) => (
+            <span key={chip} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">{chip}</span>
+          ))}
+        </div>
+      ) : null}
+      {description ? <p className="line-clamp-4 text-sm leading-6 text-slate-600">{description}</p> : null}
+      {href ? (
+        <a href={href} target="_blank" rel="noreferrer" className="mt-auto inline-flex items-center gap-1.5 text-sm font-bold text-brand">
+          {config.linkLabel || "Open"}
+          <ArrowRight size={14} />
+        </a>
+      ) : null}
+    </article>
+  );
+}
+
+export function PublicCard({ item, config, compact = false, rating }: { item: PublicRecord; config: ModuleConfig; compact?: boolean; rating?: number | null }) {
+  if (profileModules.includes(config.key)) {
+    return <PublicProfileCard item={item} config={config} />;
+  }
   const title = itemTitle(item, config);
   const description = config.descriptionField ? htmlValue(item[config.descriptionField]) : "";
   const image = imageUrl(item, config.imageField);
@@ -352,54 +460,98 @@ export function PublicCard({ item, config, compact = false }: { item: PublicReco
     .flatMap((field) => {
       const value = item[field];
       if (Array.isArray(value)) return value.map(plainText);
-      return plainText(value).split(",").map((part) => part.trim());
+      return plainText(value).split(",").map((part: string) => part.trim());
     })
     .filter(Boolean)
     .slice(0, compact ? 3 : 6);
   const secondary = (config.secondaryFields || []).map((field) => plainText(item[field])).filter(Boolean);
   const date = config.dateField ? plainText(item[config.dateField]) : "";
   const href = config.linkField ? plainText(item[config.linkField]) : "";
+  const level = plainText(item.level);
+  const cardRating = typeof rating === "number" ? rating : Number(plainText(item.rating || item.learner_rating));
+  const showRating = !Number.isNaN(cardRating) && cardRating > 0;
+  const isCourse = config.key === "courses";
+  const isTestimonial = config.key === "testimonials";
 
   return (
-    <article className="public-card reveal">
-      {image ? (
-        <img src={image} alt={title} className="public-card-media" loading="lazy" />
-      ) : (
-        <div className="public-card-media public-card-art" aria-hidden="true">
-          <Icon size={34} />
+    <article className={`public-card reveal ${isCourse ? "course-card" : ""}`}>
+      <div className="course-card__media">
+        {image ? (
+          <img src={image} alt={title} className="public-card-media" loading="lazy" decoding="async" />
+        ) : (
+          <div className="course-card__art public-card-media public-card-art" aria-hidden="true">
+            <Icon size={36} />
+          </div>
+        )}
+        <div className="course-card__overlay" aria-hidden="true" />
+        <div className="course-card__badge-row">
+          <span className="course-card__badge"><BadgeCheck size={12} /> {config.eyebrow}</span>
+          {isCourse && level ? <span className="course-card__level">{level}</span> : null}
+          {showRating ? <span className="course-card__rating"><Star size={12} className="fill-amber-300 text-amber-300" /> {ratingSummary(cardRating)}</span> : null}
+          {!isCourse && showRating ? starsForRating(cardRating) : null}
         </div>
-      )}
-      <div className="p-5">
+      </div>
+      <div className="course-card__body">
         <div className="flex flex-wrap items-center gap-2">
           {date ? <span className="mini-pill"><CalendarDays size={13} />{date}</span> : null}
+          {isCourse && plainText(item.duration) ? <span className="mini-pill"><Clock3 size={13} />{plainText(item.duration)}</span> : null}
           {secondary.slice(0, compact ? 1 : 3).map((value) => <span key={value} className="mini-pill">{value}</span>)}
         </div>
-        <h3 className="mt-4 text-xl font-black text-ink">{title}</h3>
-        {description ? <div className="mt-3 line-clamp-4 text-sm leading-6 text-slate-600" dangerouslySetInnerHTML={{ __html: description }} /> : null}
-        {chips.length ? <div className="mt-5 flex flex-wrap gap-2">{chips.map((chip) => <span key={chip} className="soft-chip">{chip}</span>)}</div> : null}
-        {href ? (
-          <a href={href} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 text-sm font-black text-brand">
-            {config.linkLabel || "Open"}
-            <ArrowRight size={15} />
-          </a>
-        ) : null}
+        <h3 className="course-card__title">{title}</h3>
+        {description ? <div className="course-card__excerpt line-clamp-3" dangerouslySetInnerHTML={{ __html: description }} /> : null}
+        {chips.length ? <div className="course-card__chips">{chips.map((chip) => <span key={chip} className="course-card__chip">{chip}</span>)}</div> : null}
+        <div className="course-card__footer">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            {isTestimonial && showRating ? <span className="inline-flex items-center gap-1"><Star size={12} className="fill-amber-400 text-amber-400" /> {ratingSummary(cardRating)}</span> : null}
+          </div>
+          {href ? (
+            <a href={href} target="_blank" rel="noreferrer" className="course-card__cta">
+              {config.linkLabel || "Open"}
+              <ArrowRight size={15} />
+            </a>
+          ) : null}
+        </div>
       </div>
     </article>
+  );
+}
+
+function CourseSectionGrid({ items, testimonials }: { items: PublicRecord[]; testimonials: PublicRecord[] }) {
+  return (
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <PublicCard
+          key={String(item.uuid || item.id || itemTitle(item, publicModuleConfigs.courses))}
+          item={item}
+          config={publicModuleConfigs.courses}
+          compact
+          rating={courseRatingForRecord(item, testimonials)}
+        />
+      ))}
+    </div>
   );
 }
 
 export function FeaturedSection({ module, limit = 3, title, description }: { module: PublicModuleKey; limit?: number; title?: string; description?: string }) {
   const config = publicModuleConfigs[module];
   const result = usePublicList(module, { pageSize: limit, featured: true });
+  const testimonialRatings = module === "courses" ? usePublicList("testimonials", { pageSize: 100 }) : null;
   const items = result.data?.items || [];
+  const testimonialItems = testimonialRatings?.data?.items || [];
   return (
-    <section className="wrap py-20">
-      <SectionHeading eyebrow={config.eyebrow} title={title || config.title} description={description || config.description} action={<Link href={module === "success-stories" ? "/success" : `/${module === "faqs" ? "faq" : module}`} className="button button-outline">View all <ArrowRight size={16} /></Link>} />
+    <section className="section-shell py-20 md:py-24">
+      <div className="wrap">
+        <SectionHeading eyebrow={config.eyebrow} title={title || config.title} description={description || config.description} action={<Link href={module === "success-stories" ? "/success" : `/${module === "faqs" ? "faq" : module}`} className="button button-outline">View all <ArrowRight size={16} /></Link>} />
+      </div>
       <div className="mt-10">
-        {result.isLoading ? <LoadingGrid /> : null}
-        {result.isError ? <EmptyState label={`Unable to load ${config.eyebrow.toLowerCase()} right now.`} /> : null}
-        {!result.isLoading && !result.isError && !items.length ? <EmptyState label={config.emptyLabel} /> : null}
-        {items.length ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((item) => <PublicCard key={String(item.uuid || item.id || itemTitle(item, config))} item={item} config={config} compact />)}</div> : null}
+        <div className="wrap">
+          {result.isLoading ? <LoadingGrid /> : null}
+          {result.isError ? <EmptyState label={`Unable to load ${config.eyebrow.toLowerCase()} right now.`} /> : null}
+          {!result.isLoading && !result.isError && !items.length ? <EmptyState label={config.emptyLabel} /> : null}
+          {items.length ? (
+            module === "courses" && testimonialRatings ? <CourseSectionGrid items={items} testimonials={testimonialItems} /> : <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <PublicCard key={String(item.uuid || item.id || itemTitle(item, config))} item={item} config={config} compact />)}</div>
+          ) : null}
+        </div>
       </div>
     </section>
   );
